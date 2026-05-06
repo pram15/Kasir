@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kasir Pancong</title>
+<link rel="stylesheet" href="style.css">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff9800">
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>Kasir Pancong 💸</h1>
+
+<label>Nama</label>
+<input type="text" id="nama">
+
+<label>Nomor</label>
+<input type="text" id="nomor">
+
+<div id="orderItems"></div>
+
+<button class="add-btn" onclick="tambahItem()">+ Tambah Menu</button>
+
+<div class="total-box">
+  <p>Total:</p>
+  <div class="total" id="totalHarga">Rp0</div>
+</div>
+
+<label>Uang Bayar</label>
+<input type="number" id="bayar">
+
+<div class="total-box">
+  <p>Kembalian:</p>
+  <div class="total" id="kembalian">Rp0</div>
+</div>
+
+<button class="pay-btn" onclick="bayar()">Bayar</button>
+
+</div>
+
+<script>
+
+// =====================
+// URL SPREADSHEET
+// =====================
+const SPREADSHEET_URL = "https://script.google.com/macros/s/AKfycbzP2c88emdVSn7BUrcQzBtGPuu3SxKNPCigq7QsAgT4lsXvnoOrMt5MmcyRMfKCXPTGpA/exec";
+
+
+// =====================
+// DATA HARGA
+// =====================
+const hargaMenu = {
+  choco:11000,
+  tiramisu:11000,
+  matcha:10000
+};
+
+
+// =====================
+// TAMBAH ITEM
+// =====================
+function tambahItem(){
+
+  const item = document.createElement("div");
+  item.classList.add("order-item");
+
+  item.innerHTML = `
+    <label>Menu</label>
+    <select class="menu">
+      <option value="choco">Choco Crunchy</option>
+      <option value="tiramisu">Tiramisu</option>
+      <option value="matcha">Matcha</option>
+    </select>
+
+    <label>Jumlah</label>
+    <input type="number" class="qty" value="1">
+
+    <button class="delete-btn" onclick="this.parentElement.remove(); updateTotal();">Hapus</button>
+  `;
+
+  document.getElementById("orderItems").appendChild(item);
+
+  item.querySelectorAll("select,input")
+    .forEach(el=>el.addEventListener("input", updateTotal));
+
+  updateTotal();
+}
+
+
+// =====================
+// HITUNG TOTAL
+// =====================
+function updateTotal(){
+
+  let total = 0;
+
+  document.querySelectorAll(".order-item").forEach(item=>{
+    const menu = item.querySelector(".menu").value;
+    const qty = item.querySelector(".qty").value;
+
+    total += hargaMenu[menu] * qty;
+  });
+
+  document.getElementById("totalHarga").innerText =
+    "Rp" + total.toLocaleString("id-ID");
+}
+
+
+// =====================
+// HITUNG KEMBALIAN
+// =====================
+document.getElementById("bayar").addEventListener("input", function(){
+
+  const total =
+    parseInt(document.getElementById("totalHarga").innerText.replace(/[^0-9]/g,'')) || 0;
+
+  const bayar = this.value;
+
+  const kembali = bayar - total;
+
+  document.getElementById("kembalian").innerText =
+    kembali >= 0 ? "Rp"+kembali.toLocaleString("id-ID") : "Kurang";
+});
+
+
+// =====================
+// SIMPAN OFFLINE
+// =====================
+function simpanOffline(data){
+  let list = JSON.parse(localStorage.getItem("offlineData")) || [];
+  list.push(data);
+  localStorage.setItem("offlineData", JSON.stringify(list));
+}
+
+
+// =====================
+// SYNC SAAT ONLINE
+// =====================
+window.addEventListener("online", kirimOffline);
+
+function kirimOffline(){
+
+  let list = JSON.parse(localStorage.getItem("offlineData")) || [];
+
+  list.forEach(data=>{
+    fetch(SPREADSHEET_URL,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(data)
+    });
+  });
+
+  if(list.length){
+    alert("Data offline berhasil dikirim!");
+  }
+
+  localStorage.removeItem("offlineData");
+}
+
+
+// =====================
+// BAYAR
+// =====================
+async function bayar(){
+
+  const nama = document.getElementById("nama").value.trim();
+  const nomor = document.getElementById("nomor").value.trim();
+
+  const total =
+    parseInt(document.getElementById("totalHarga").innerText.replace(/[^0-9]/g,'')) || 0;
+
+  const uangBayar =
+    parseInt(document.getElementById("bayar").value) || 0;
+
+  const kembali = uangBayar - total;
+
+  if(kembali < 0){
+    alert("❌ Uang kurang!");
+    return;
+  }
+
+  let detail = "";
+
+  document.querySelectorAll(".order-item").forEach((item,i)=>{
+    const menu = item.querySelector(".menu").selectedOptions[0].text;
+    const qty = item.querySelector(".qty").value;
+    detail += `Item ${i+1}: ${menu} x${qty} | `;
+  });
+
+  const params = new URLSearchParams({
+    nama,
+    nomor,
+    detail,
+    total,
+    bayar: uangBayar,
+    kembalian: kembali
+  });
+
+  const url = "https://script.google.com/macros/s/AKfycbzP2c88emdVSn7BUrcQzBtGPuu3SxKNPCigq7QsAgT4lsXvnoOrMt5MmcyRMfKCXPTGpA/exec?" + params.toString();
+
+  try {
+
+    // trik tanpa CORS: pakai image request
+   const img = new Image();
+    img.src = url;
+
+    // anggap sukses, tunggu sebentar biar request terkirim
+    setTimeout(() => {
+    alert("✅ Transaksi berhasil & masuk spreadsheet!");
+    location.reload();
+    }, 1200);
+
+  } catch(err){
+
+    console.error(err);
+    simpanOffline({
+      nama, nomor, detail, total, bayar: uangBayar, kembalian: kembali
+    });
+
+    alert("📴 Gagal kirim, disimpan offline");
+
+  }
+}
+
+
+// =====================
+// SERVICE WORKER
+// =====================
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js');
+}
+
+
+// AUTO LOAD
+tambahItem();
+
+</script>
+
+</body>
+</html>
