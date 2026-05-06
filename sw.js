@@ -3,7 +3,6 @@ const CACHE_NAME = "kasir-pwa-v1";
 const urlsToCache = [
   "/kasir/",
   "/kasir/index.html",
-  "/kasir/kasir.html",
   "/kasir/foto/logogram.png"
 ];
 

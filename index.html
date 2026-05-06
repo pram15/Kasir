@@ -3,14 +3,71 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>Kasir Pancong</title>
+
 <link rel="icon" href="foto/logogram.png">
-<link rel="stylesheet" href="style.css">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#ff9800">
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
 
+<style>
+body{
+  font-family:'Poppins',sans-serif;
+  background:#0f0f0f;
+  color:white;
+  display:flex;
+  justify-content:center;
+  padding:20px;
+}
+
+.container{
+  width:100%;
+  max-width:550px;
+  background:#1a1a1a;
+  padding:25px;
+  border-radius:25px;
+}
+
+h1{text-align:center;}
+
+input,select{
+  width:100%;
+  padding:10px;
+  margin-bottom:10px;
+  border-radius:10px;
+  border:none;
+  background:#2a2a2a;
+  color:white;
+}
+
+.order-item{
+  background:#222;
+  padding:15px;
+  border-radius:15px;
+  margin-top:15px;
+}
+
+button{
+  width:100%;
+  padding:12px;
+  border:none;
+  border-radius:12px;
+  margin-top:10px;
+  cursor:pointer;
+}
+
+.add-btn{background:#333;}
+.pay-btn{background:linear-gradient(45deg,#ff9800,#ff4d6d);}
+.delete-btn{background:red;}
+
+.total{
+  font-size:20px;
+  color:#ff9800;
+  font-weight:bold;
+}
+</style>
 </head>
 
 <body>
@@ -19,28 +76,18 @@
 
 <h1>Kasir Pancong 💸</h1>
 
-<label>Nama</label>
-<input type="text" id="nama">
-
-<label>Nomor</label>
-<input type="text" id="nomor">
+<input type="text" id="nama" placeholder="Nama">
+<input type="text" id="nomor" placeholder="Nomor WA">
 
 <div id="orderItems"></div>
 
 <button class="add-btn" onclick="tambahItem()">+ Tambah Menu</button>
 
-<div class="total-box">
-  <p>Total:</p>
-  <div class="total" id="totalHarga">Rp0</div>
-</div>
+<h3>Total: <span class="total" id="totalHarga">Rp0</span></h3>
 
-<label>Uang Bayar</label>
-<input type="number" id="bayar">
+<input type="number" id="bayar" placeholder="Uang Bayar">
 
-<div class="total-box">
-  <p>Kembalian:</p>
-  <div class="total" id="kembalian">Rp0</div>
-</div>
+<h3>Kembalian: <span class="total" id="kembalian">Rp0</span></h3>
 
 <button class="pay-btn" onclick="bayar()">Bayar</button>
 
@@ -49,18 +96,33 @@
 <script>
 
 // =====================
-// URL SPREADSHEET
+// SPREADSHEET
 // =====================
 const SPREADSHEET_URL = "https://script.google.com/macros/s/AKfycbzP2c88emdVSn7BUrcQzBtGPuu3SxKNPCigq7QsAgT4lsXvnoOrMt5MmcyRMfKCXPTGpA/exec";
 
 
 // =====================
-// DATA HARGA
+// HARGA MENU
 // =====================
 const hargaMenu = {
-  choco:11000,
-  tiramisu:11000,
-  matcha:10000
+  original:{S:8000,M:14000,L:16000},
+  taro:{S:10000,M:17000,L:20000},
+  cappucino:{S:10000,M:17000,L:20000},
+  greentea:{S:10000,M:17000,L:20000},
+  redvelvet:{S:10000,M:17000,L:20000},
+  darkchoco:{S:11000,M:18000,L:22000},
+  tiramisu:{S:11000,M:18000,L:22000},
+  chococrunchy:{S:11000,M:18000,L:22000}
+};
+
+const hargaTopping = {
+  meses:{S:2000,M:3000,L:4000},
+  milo:{S:2000,M:3000,L:4000},
+  chocochip:{S:2000,M:3000,L:4000},
+  oreo:{S:2000,M:4000,L:4000},
+  keju:{S:3000,M:4000,L:6000},
+  almond:{S:3000,M:4000,L:6000},
+  regal:{S:3000,M:4000,L:6000}
 };
 
 
@@ -73,17 +135,41 @@ function tambahItem(){
   item.classList.add("order-item");
 
   item.innerHTML = `
-    <label>Menu</label>
-    <select class="menu">
-      <option value="choco">Choco Crunchy</option>
-      <option value="tiramisu">Tiramisu</option>
-      <option value="matcha">Matcha</option>
-    </select>
+  <select class="rasa">
+    <option value="original">Original</option>
+    <option value="taro">Taro</option>
+    <option value="cappucino">Cappucino</option>
+    <option value="greentea">Green Tea</option>
+    <option value="redvelvet">Red Velvet</option>
+    <option value="darkchoco">Dark Choco</option>
+    <option value="tiramisu">Tiramisu</option>
+    <option value="chococrunchy">Choco Crunchy</option>
+  </select>
 
-    <label>Jumlah</label>
-    <input type="number" class="qty" value="1">
+  <select class="size">
+    <option value="S">S</option>
+    <option value="M">M</option>
+    <option value="L">L</option>
+  </select>
 
-    <button class="delete-btn" onclick="this.parentElement.remove(); updateTotal();">Hapus</button>
+  <select class="kematangan">
+    <option>Matang</option>
+    <option>Lumer</option>
+  </select>
+
+  <input type="number" class="qty" value="1" min="1">
+
+  <div>
+    <label><input type="checkbox" value="meses"> Meses</label>
+      <label><input type="checkbox" value="milo"> Milo</label>
+      <label><input type="checkbox" value="chocochip"> Choco Chip</label>
+      <label><input type="checkbox" value="oreo"> Oreo</label>
+      <label><input type="checkbox" value="keju"> Keju</label>
+      <label><input type="checkbox" value="almond"> Almond</label>
+      <label><input type="checkbox" value="regal"> Regal</label>
+  </div>
+
+  <button class="delete-btn" onclick="this.parentElement.remove();updateTotal()">Hapus</button>
   `;
 
   document.getElementById("orderItems").appendChild(item);
@@ -103,10 +189,19 @@ function updateTotal(){
   let total = 0;
 
   document.querySelectorAll(".order-item").forEach(item=>{
-    const menu = item.querySelector(".menu").value;
-    const qty = item.querySelector(".qty").value;
 
-    total += hargaMenu[menu] * qty;
+    const rasa = item.querySelector(".rasa").value;
+    const size = item.querySelector(".size").value;
+    const qty = parseInt(item.querySelector(".qty").value);
+
+    let harga = hargaMenu[rasa][size];
+
+    let toppingTotal = 0;
+
+    item.querySelectorAll('input[type="checkbox"]:checked')
+      .forEach(t => toppingTotal += hargaTopping[t.value][size]);
+
+    total += (harga + toppingTotal) * qty;
   });
 
   document.getElementById("totalHarga").innerText =
@@ -115,16 +210,15 @@ function updateTotal(){
 
 
 // =====================
-// HITUNG KEMBALIAN
+// KEMBALIAN
 // =====================
 document.getElementById("bayar").addEventListener("input", function(){
 
-  const total =
-    parseInt(document.getElementById("totalHarga").innerText.replace(/[^0-9]/g,'')) || 0;
+  const total = parseInt(
+    document.getElementById("totalHarga").innerText.replace(/[^0-9]/g,'')
+  ) || 0;
 
-  const bayar = this.value;
-
-  const kembali = bayar - total;
+  const kembali = this.value - total;
 
   document.getElementById("kembalian").innerText =
     kembali >= 0 ? "Rp"+kembali.toLocaleString("id-ID") : "Kurang";
@@ -132,102 +226,59 @@ document.getElementById("bayar").addEventListener("input", function(){
 
 
 // =====================
-// SIMPAN OFFLINE
-// =====================
-function simpanOffline(data){
-  let list = JSON.parse(localStorage.getItem("offlineData")) || [];
-  list.push(data);
-  localStorage.setItem("offlineData", JSON.stringify(list));
-}
-
-
-// =====================
-// SYNC SAAT ONLINE
-// =====================
-window.addEventListener("online", kirimOffline);
-
-function kirimOffline(){
-
-  let list = JSON.parse(localStorage.getItem("offlineData")) || [];
-
-  list.forEach(data=>{
-    fetch(SPREADSHEET_URL,{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify(data)
-    });
-  });
-
-  if(list.length){
-    alert("Data offline berhasil dikirim!");
-  }
-
-  localStorage.removeItem("offlineData");
-}
-
-
-// =====================
 // BAYAR
 // =====================
-async function bayar(){
+function bayar(){
 
-  const nama = document.getElementById("nama").value.trim();
-  const nomor = document.getElementById("nomor").value.trim();
-
-  const total =
-    parseInt(document.getElementById("totalHarga").innerText.replace(/[^0-9]/g,'')) || 0;
-
-  const uangBayar =
-    parseInt(document.getElementById("bayar").value) || 0;
-
-  const kembali = uangBayar - total;
-
-  if(kembali < 0){
-    alert("❌ Uang kurang!");
-    return;
-  }
+  const nama = document.getElementById("nama").value;
+  const nomor = document.getElementById("nomor").value;
 
   let detail = "";
 
   document.querySelectorAll(".order-item").forEach((item,i)=>{
-    const menu = item.querySelector(".menu").selectedOptions[0].text;
+
+    const rasa = item.querySelector(".rasa").value;
+    const size = item.querySelector(".size").value;
+    const kematangan = item.querySelector(".kematangan").value;
     const qty = item.querySelector(".qty").value;
-    detail += `Item ${i+1}: ${menu} x${qty} | `;
+
+    let topping = [];
+    item.querySelectorAll('input[type="checkbox"]:checked')
+      .forEach(t => topping.push(t.value));
+
+    detail += `Item ${i+1}: ${rasa} (${size}) ${kematangan} x${qty} | ${topping.join(", ") || "-"} | `;
   });
+
+  const total = document.getElementById("totalHarga").innerText;
+
+  const uangBayar = parseInt(document.getElementById("bayar").value) || 0;
+
+    const totalAngka = parseInt(
+    document.getElementById("totalHarga").innerText.replace(/[^0-9]/g,'')
+    ) || 0;
+
+    const kembali = uangBayar - totalAngka;
 
   const params = new URLSearchParams({
-    nama,
-    nomor,
-    detail,
-    total,
-    bayar: uangBayar,
-    kembalian: kembali
-  });
+  nama,
+  nomor,
+  detail,
+  total: totalAngka,
+  bayar: uangBayar,
+  kembalian: kembali
+});
 
-  const url = "https://script.google.com/macros/s/AKfycbzP2c88emdVSn7BUrcQzBtGPuu3SxKNPCigq7QsAgT4lsXvnoOrMt5MmcyRMfKCXPTGpA/exec?" + params.toString();
-
-  try {
-
-    // trik tanpa CORS: pakai image request
-   const img = new Image();
-    img.src = url;
-
-    // anggap sukses, tunggu sebentar biar request terkirim
-    setTimeout(() => {
+ fetch(SPREADSHEET_URL + "?" + params.toString())
+  .then(res => res.text())
+  .then(res => {
+    console.log("Response:", res);
     alert("✅ Transaksi berhasil!");
     location.reload();
-    }, 1200);
-
-  } catch(err){
-
+  })
+  .catch(err => {
     console.error(err);
-    simpanOffline({
-      nama, nomor, detail, total, bayar: uangBayar, kembalian: kembali
-    });
-
-    alert("📴 Gagal kirim, disimpan offline");
-
-  }
+    alert("❌ Gagal kirim ke spreadsheet");
+  });
 }
 
 
